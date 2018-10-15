@@ -5,6 +5,9 @@ package hdkey
 import (
 	"fmt"
 	"crypto/rand"
+	"crypto/sha512"
+	"crypto/hmac"
+	"encoding/binary"
 )
 
 const(
@@ -20,6 +23,7 @@ var(
 	// ErrInvalidSeedLength describes an error in which provided seed length
 	// is not in the specified range
 	ErrInvalidSeedLength = fmt.Errorf("Seed length must be between %d and %d bits", MinSeedBytes*8, MaxSeedBytes*8)
+	ErrInvalidSeedValue = fmt.Errorf("Invalid Seed. Please try another seed")
 )
 
 // ExtKey type houses params for extended private key
@@ -51,13 +55,24 @@ func NewExtKey(key []byte, chainCode []byte, version []byte, depth uint8,
 // MasterGen returns master key derived from seed.
 //
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Master_key_generation
-// func (k *ExtKey)MasterGen(seed []byte) (*ExtKey, error) {
-// 	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
-// 		return nil, ErrInvalidSeedLength
-// 	}
+func (k *ExtKey)MasterGen(seed []byte) (*ExtKey, error) {
+	if len(seed) < MinBytes || len(seed) > MaxBytes {
+		return nil, ErrInvalidSeedLength
+	}
 
-// 	return NewExtKey(key, 0, true)
-// }
+// I = HMAC-SHA512(Key = "Bitcoin seed", Data = S)
+	mac := hmac.New(sha512.New, []byte("Bitcoin seed"))
+	mac.Write(seed)
+	I := mac.Sum(nil)
+
+	Ir := I[len(I)/2] // chainCode
+	Il := I[:len(I)/2] // parse256(Il) is privkey
+	privkey := binary.BigEndian.Uint32(Il)
+	if privkey == 0 || privkey >= n {
+		return nil, ErrInvalidSeedValue
+	}
+	return NewExtKey(key, 0, true)
+}
 
 // SeedGen returns seed.
 //
