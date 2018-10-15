@@ -22,6 +22,7 @@ var(
 // ExtendedKey type houses params for extended private key
 type ExtKey struct {
 	key []byte // 33 bytes
+	pubkey []byte
 	chainCode []byte // 32 bytes
 	version []byte // 4 byte
 	depth uint8 // 1 byte
@@ -42,7 +43,9 @@ func (k *ExtKey)MasterGen(seed []byte) (*ExtKey, error) {
 }
 
 // SeedGen returns seed.
-func SeedGen(length uint) ([]byte, error) {
+//
+// Generate a seed byte sequence S of a chosen length (between 128 and 512 bits; 256 bits is advised)
+func (k *ExtKey) SeedGen(length uint) ([]byte, error) {
 	if length < MinBytes || lenght > MaxBytes {
 		return nil, ErrInvalidSeedLength
 	}
