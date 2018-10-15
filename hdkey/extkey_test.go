@@ -1,9 +1,14 @@
 package hdkey
 
 import (
+	"fmt"
 	"testing"
+<<<<<<< HEAD
 	"errors"
 	"reflect"
+=======
+	"encoding/hex"
+>>>>>>> hdkey: impl mastergen but fail to test
 )
 
 // TestSeedGen ensures that SeedGen returns error when specified length is not
@@ -36,4 +41,16 @@ func TestSeedGen(t *testing.T) {
 			continue
 		}
 	}
+}
+
+func TestMasterGen(t *testing.T) {
+	seed, e := hex.DecodeString("000102030405060708090a0b0c0d0e0f")
+	if e != nil {
+		t.Error("Fail to decode string to byte array")
+	}
+	masterprivkey, err := MasterGen(seed)
+	if err != nil {
+		t.Error("Fail to generate masterkey")
+	}
+	fmt.Printf("+%v", masterprivkey)
 }
