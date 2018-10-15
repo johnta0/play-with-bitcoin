@@ -68,8 +68,7 @@ func MasterGen(seed []byte) (*ExtKey, error) {
 	Ir := I[len(I)/2:] // chainCode
 	Il := I[:len(I)/2] // parse256(Il) is privkey
 	privkey := new(big.Int).SetBytes(Il)
-	n := big.NewInt(2).Exp(big.NewInt(2), big.NewInt(32), nil)
-	fmt.Printf("n=%d",n)
+	n := big.NewInt(2).Exp(big.NewInt(2), big.NewInt(256), nil)
 	if privkey.Sign() == 0 || privkey.Cmp(n) == 1 {
 		return nil, ErrInvalidSeedValue
 	}
