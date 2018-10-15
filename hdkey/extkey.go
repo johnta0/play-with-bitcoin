@@ -8,15 +8,18 @@ import (
 )
 
 const(
-	// Seed: between 128 and 512 bits; 256 bits is advised
-	MinBytes = 16 // 128 bits
-	MaxBytes = 64 // 512 bits
+	// MinSeedBytes defines min value of seed length in bytes
+	MinSeedBytes = 16 // 128 bits
+	// MaxSeedBytes defines max value of seed length in bytes
+	MaxSeedBytes = 64 // 512 bits
+	// RecommendedBytes is the recommended seed length in bytes
 	RecommendedBytes = 32 // 256 bits
 )
 
 var(
-	ErrInvalidSeedLength = fmt.Errorf("Seed length must be between %d and %d bits"
-		, MinSeedBytes*8, MaxSeedBytes*8)
+	// ErrInvalidSeedLength describes an error in which provided seed length
+	// is not in the specified range
+	ErrInvalidSeedLength = fmt.Errorf("Seed length must be between %d and %d bits", MinSeedBytes*8, MaxSeedBytes*8)
 )
 
 // ExtendedKey type houses params for extended private key
@@ -31,7 +34,7 @@ type ExtKey struct {
 	isPrivate bool // true => privkey, false => pubkey
 }
 
-// MasrterGen return master key derived from seed.
+// MasterGen returns master key derived from seed.
 //
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Master_key_generation
 func (k *ExtKey)MasterGen(seed []byte) (*ExtKey, error) {
@@ -46,7 +49,8 @@ func (k *ExtKey)MasterGen(seed []byte) (*ExtKey, error) {
 //
 // Generate a seed byte sequence S of a chosen length (between 128 and 512 bits; 256 bits is advised)
 func (k *ExtKey) SeedGen(length uint) ([]byte, error) {
-	if length < MinBytes || lenght > MaxBytes {
+	// The seed range confining
+	if length < MinSeedBytes || length > MaxSeedBytes {
 		return nil, ErrInvalidSeedLength
 	}
 
@@ -55,12 +59,12 @@ func (k *ExtKey) SeedGen(length uint) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return seed
+	return seed, nil
 }
 
-// ChildKeyDeriv returns derived childed key by index
-func (k *ExtKey) DeriveChildKey(index uint) (*ExtPrivKey) {
-	return
+// DeriveChildKey returns derived childed key by index
+func (k *ExtKey) DeriveChildKey(index uint) (*ExtKey) {
+	return NewExtKey()
 }
 
 // DerivePubkey returns public key derived from given private key
