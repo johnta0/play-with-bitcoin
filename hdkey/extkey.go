@@ -34,6 +34,20 @@ type ExtKey struct {
 	isPrivate bool // true => privkey, false => pubkey
 }
 
+// NewExtKey returns a new instnace of ExtKey
+func NewExtKey(key []byte, chainCode []byte, version []byte, depth uint8,
+		parentFingerPrint []byte, childNum uint32, isPrivate bool) *ExtKey {
+	return &ExtKey {
+		key: key,
+		chainCode: chainCode,
+		version: version,
+		depth: depth,
+		parentFingerPrint: parentFingerPrint,
+		childNum: childNum,
+		isPrivate: isPrivate,
+	}
+}
+
 // MasterGen returns master key derived from seed.
 //
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Master_key_generation
