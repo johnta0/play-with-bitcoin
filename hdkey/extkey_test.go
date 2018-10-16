@@ -41,13 +41,15 @@ func TestSeedGen(t *testing.T) {
 }
 
 func TestMasterGen(t *testing.T) {
-	seed, e := hex.DecodeString("000102030405060708090a0b0c0d0e0f")
-	if e != nil {
+	// TODO: check that an output is correct.
+	seed, err1 := hex.DecodeString("000102030405060708090a0b0c0d0e0f")
+	if err1 != nil {
 		t.Error("Fail to decode string to byte array")
 	}
-	masterprivkey, err := MasterGen(seed)
-	if err != nil {
-		t.Fatal(err)
+	masterExtKey, err2 := MasterGen(seed)
+	// fmt.Printf("+%v\n", masterExtKey)
+	if err2 != nil {
+		t.Fatal(err2)
 	}
-	fmt.Printf("+%v", masterprivkey)
+	fmt.Printf("+%v", masterExtKey)
 }

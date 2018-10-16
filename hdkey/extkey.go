@@ -56,31 +56,27 @@ func NewExtKey(key []byte, chainCode []byte, version []byte, depth uint8,
 //
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Master_key_generation
 func MasterGen(seed []byte) (*ExtKey, error) {
-	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
-		return nil, ErrInvalidSeedLength
-	}
-
 // I = HMAC-SHA512(Key = "Bitcoin seed", Data = S)
 	mac := hmac.New(sha512.New, []byte("Bitcoin seed"))
 	mac.Write(seed)
 	I := mac.Sum(nil)
 
 	Ir := I[len(I)/2:] // chainCode
-	Il := I[:len(I)/2] // parse256(Il) is privkey
+	Il := I[:len(I)/2] // privkey
 	privkey := new(big.Int).SetBytes(Il)
 	n := big.NewInt(2).Exp(big.NewInt(2), big.NewInt(256), nil)
 	if privkey.Sign() == 0 || privkey.Cmp(n) == 1 {
 		return nil, ErrInvalidSeedValue
 	}
-	return &ExtKey {
-		key: Il,
-		chainCode: Ir,
-		version: []byte("0x04358394"), //testnet privatekey
-		depth: 0,
-		parentFingerPrint: []byte("0x00000000"),
-		childNum: 0,
-		isPrivate: true,
-	}, nil
+	return NewExtKey (
+		Il, // key
+		Ir, // chainCode
+		[]byte("0x04358394"), // testnet privatekey
+		0, // depth
+		[]byte("0x00000000"), // parentFP is 0x00000000 in the case of masterkey
+		0, //childNum
+		true,
+	), nil
 }
 
 // SeedGen returns seed.
