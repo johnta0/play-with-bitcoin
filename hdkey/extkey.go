@@ -8,20 +8,24 @@ import (
 )
 
 const(
-	// Seed: between 128 and 512 bits; 256 bits is advised
-	MinBytes = 16 // 128 bits
-	MaxBytes = 64 // 512 bits
+	// MinSeedBytes defines min value of seed length in bytes
+	MinSeedBytes = 16 // 128 bits
+	// MaxSeedBytes defines max value of seed length in bytes
+	MaxSeedBytes = 64 // 512 bits
+	// RecommendedBytes is the recommended seed length in bytes
 	RecommendedBytes = 32 // 256 bits
 )
 
 var(
-	ErrInvalidSeedLength = fmt.Errorf("Seed length must be between %d and %d bits"
-		, MinSeedBytes*8, MaxSeedBytes*8)
+	// ErrInvalidSeedLength describes an error in which provided seed length
+	// is not in the specified range
+	ErrInvalidSeedLength = fmt.Errorf("Seed length must be between %d and %d bits", MinSeedBytes*8, MaxSeedBytes*8)
 )
 
-// ExtendedKey type houses params for extended private key
+// ExtKey type houses params for extended private key
 type ExtKey struct {
 	key []byte // 33 bytes
+	pubkey []byte
 	chainCode []byte // 32 bytes
 	version []byte // 4 byte
 	depth uint8 // 1 byte
@@ -30,20 +34,38 @@ type ExtKey struct {
 	isPrivate bool // true => privkey, false => pubkey
 }
 
-// MasrterGen return master key derived from seed.
-//
-// https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Master_key_generation
-func (k *ExtKey)MasterGen(seed []byte) (*ExtKey, error) {
-	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
-		return nil, ErrInvalidSeedLength
+// NewExtKey returns a new instnace of ExtKey
+func NewExtKey(key []byte, chainCode []byte, version []byte, depth uint8,
+		parentFingerPrint []byte, childNum uint32, isPrivate bool) *ExtKey {
+	return &ExtKey {
+		key: key,
+		chainCode: chainCode,
+		version: version,
+		depth: depth,
+		parentFingerPrint: parentFingerPrint,
+		childNum: childNum,
+		isPrivate: isPrivate,
 	}
-
-	return NewExtKey(key, 0, true)
 }
 
+// MasterGen returns master key derived from seed.
+//
+// https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Master_key_generation
+// func (k *ExtKey)MasterGen(seed []byte) (*ExtKey, error) {
+// 	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
+// 		return nil, ErrInvalidSeedLength
+// 	}
+
+// 	return NewExtKey(key, 0, true)
+// }
+
 // SeedGen returns seed.
-func SeedGen(length uint) ([]byte, error) {
-	if length < MinBytes || lenght > MaxBytes {
+//
+// Generate a seed byte sequence S of a chosen length (between 128 and 512 bits; 256 bits is advised)
+// [16, 64] bytes, 32 bits advised
+func SeedGen(length uint8) ([]byte, error) {
+	// The seed range confining
+	if length < MinSeedBytes || length > MaxSeedBytes {
 		return nil, ErrInvalidSeedLength
 	}
 
@@ -52,15 +74,15 @@ func SeedGen(length uint) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return seed
+	return seed, nil
 }
 
-// ChildKeyDeriv returns derived childed key by index
-func (k *ExtKey) DeriveChildKey(index uint) (*ExtPrivKey) {
-	return
-}
+// DeriveChildKey returns derived childed key by index
+// func (k *ExtKey) DeriveChildKey(index uint) (*ExtKey) {
+// 	return NewExtKey()
+// }
 
 // DerivePubkey returns public key derived from given private key
-func (k *ExtKey) DerivePubkey(privkey []byte) []byte {
-	return
-}
+// func (k *ExtKey) DerivePubkey(privkey []byte) []byte {
+// 	return
+// }
