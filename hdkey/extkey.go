@@ -5,9 +5,13 @@ package hdkey
 import (
 	"fmt"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/hmac"
 	"math/big"
+	"encoding/binary"
+	"encoding/hex"
+	"github.com/btcsuite/btcutil/base58"
 )
 
 const(
@@ -24,6 +28,11 @@ var(
 	// is not in the specified range
 	ErrInvalidSeedLength = fmt.Errorf("Seed length must be between %d and %d bits", MinSeedBytes*8, MaxSeedBytes*8)
 	ErrInvalidSeedValue = fmt.Errorf("Invalid Seed. Please try another seed")
+	// versions
+	MainPub, _ = hex.DecodeString("0488B21E")
+	MainPrv, _ = hex.DecodeString("0488ADE4")
+	TestPub, _ = hex.DecodeString("043587CF")
+	TestPrv, _ = hex.DecodeString("04358394")
 )
 
 // ExtKey type houses params for extended private key
@@ -61,8 +70,8 @@ func MasterGen(seed []byte) (*ExtKey, error) {
 	mac.Write(seed)
 	I := mac.Sum(nil)
 
-	Ir := I[len(I)/2:] // chainCode
-	Il := I[:len(I)/2] // privkey
+	Ir := I[32:] // chainCode
+	Il := I[:32] // privkey
 	privkey := new(big.Int).SetBytes(Il)
 	n := big.NewInt(2).Exp(big.NewInt(2), big.NewInt(256), nil)
 	if privkey.Sign() == 0 || privkey.Cmp(n) == 1 {
@@ -71,12 +80,42 @@ func MasterGen(seed []byte) (*ExtKey, error) {
 	return NewExtKey (
 		Il, // key
 		Ir, // chainCode
-		[]byte("0x04358394"), // testnet privatekey
+	// TODO: Be able to make choice main/testnet
+		MainPrv,
 		0, // depth
-		[]byte("0x00000000"), // parentFP is 0x00000000 in the case of masterkey
+		make([]byte, 4), // parentFP is 0x00000000 if masterkey
 		0, //childNum
 		true,
 	), nil
+}
+
+// this function serialize ExtKey.
+//
+// Serialization Format:
+// version || depth || parentFP || childNum || chainCode || 0x00 || key || checksum
+func (k *ExtKey)Serialize() (string, error) {
+	ret := make([]byte, 0)
+	ret = append(ret, k.version...)
+	ret = append(ret, k.depth)
+	ret = append(ret, k.parentFingerPrint...)
+	childNum := make([]byte, 4)
+	binary.BigEndian.PutUint32(childNum, k.childNum)
+	ret = append(ret, childNum...)
+	ret = append(ret, k.chainCode...)
+	if k.isPrivate == true {
+		ret = append(ret, 0x00)
+		ret = append(ret, k.key...)
+} else {
+		// unimplemented
+}
+// checksum = sha256(sha256(ret))
+	hash := sha256.Sum256(ret)
+	doublehash := sha256.Sum256(hash[:])
+	checksum := doublehash[:][:4]
+
+	ret = append(ret, checksum...)
+
+	return base58.Encode(ret), nil
 }
 
 // SeedGen returns seed.
@@ -84,6 +123,7 @@ func MasterGen(seed []byte) (*ExtKey, error) {
 // Generate a seed byte sequence S of a chosen length (between 128 and 512 bits; 256 bits is advised)
 // [16, 64] bytes, 32 bits advised
 func SeedGen(length uint8) ([]byte, error) {
+	// The seed range confining
 	if length < MinSeedBytes || length > MaxSeedBytes {
 		return nil, ErrInvalidSeedLength
 	}

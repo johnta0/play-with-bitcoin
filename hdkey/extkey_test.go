@@ -41,15 +41,34 @@ func TestSeedGen(t *testing.T) {
 }
 
 func TestMasterGen(t *testing.T) {
-	// TODO: check that an output is correct.
-	seed, err1 := hex.DecodeString("000102030405060708090a0b0c0d0e0f")
-	if err1 != nil {
-		t.Error("Fail to decode string to byte array")
+	seed1, err1 := hex.DecodeString("000102030405060708090a0b0c0d0e0f") 
+	seed2, err2 := hex.DecodeString("fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542") 
+
+	if err1 != nil || err2 != nil {
+		t.Errorf("Fail to decode string to byte array. detail:%v, %v", err1, err2)
 	}
-	masterExtKey, err2 := MasterGen(seed)
-	// fmt.Printf("+%v\n", masterExtKey)
-	if err2 != nil {
-		t.Fatal(err2)
+	tests := []struct {
+		name	string
+		seed	[]byte
+		extpub string
+		extprv	string
+		errors	error
+	}{
+		{ name: "Test Vector1", seed: seed1, extprv: "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi" },
+		{ name: "Test Vector2", seed: seed2, extprv: "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U" },
 	}
-	fmt.Printf("+%v", masterExtKey)
+	for _, test := range tests {
+		fmt.Printf("TEST: %s, seed: %x\n", test.name, test.seed)
+		masterkey, e1 := MasterGen(test.seed)
+		serialized, e2 := masterkey.Serialize()
+		if e1 != nil {
+			t.Errorf("Fail to generate master key. detail:%v\n", e1)
+		}
+		if e2 != nil {
+			t.Errorf("Fail to serialize generated key. detail:%v\n", e2)
+		}
+		if serialized != test.extprv {
+			t.Errorf("Wrong key. your key:%v\n", serialized)
+		}
+	}
 }
