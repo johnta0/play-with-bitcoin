@@ -56,7 +56,7 @@ func NewExtKey(key []byte, chainCode []byte, version []byte, depth uint8,
 //
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Master_key_generation
 func MasterGen(seed []byte) (*ExtKey, error) {
-	if len(seed) < MinBytes || len(seed) > MaxBytes {
+	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
 		return nil, ErrInvalidSeedLength
 	}
 
@@ -87,8 +87,8 @@ func MasterGen(seed []byte) (*ExtKey, error) {
 //
 // Generate a seed byte sequence S of a chosen length (between 128 and 512 bits; 256 bits is advised)
 // [16, 64] bytes, 32 bits advised
-func SeedGen(length uint) ([]byte, error) {
-	if length < MinBytes || length > MaxBytes {
+func SeedGen(length uint8) ([]byte, error) {
+	if length < MinSeedBytes || length > MaxSeedBytes {
 		return nil, ErrInvalidSeedLength
 	}
 
