@@ -3,11 +3,20 @@ package hdkey
 // This is  an implementation of https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 
 import (
-	"fmt"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"math/big"
+
+	// TODO: Impl it myself in the future
+	"github.com/btcsuite/btcutil/base58"
 )
 
-const(
+const (
 	// MinSeedBytes defines min value of seed length in bytes
 	MinSeedBytes = 16 // 128 bits
 	// MaxSeedBytes defines max value of seed length in bytes
@@ -16,48 +25,100 @@ const(
 	RecommendedBytes = 32 // 256 bits
 )
 
-var(
+var (
 	// ErrInvalidSeedLength describes an error in which provided seed length
 	// is not in the specified range
 	ErrInvalidSeedLength = fmt.Errorf("Seed length must be between %d and %d bits", MinSeedBytes*8, MaxSeedBytes*8)
+	ErrInvalidSeedValue  = fmt.Errorf("Invalid Seed. Please try another seed")
+	// versions
+	MainPub, _ = hex.DecodeString("0488B21E")
+	MainPrv, _ = hex.DecodeString("0488ADE4")
+	TestPub, _ = hex.DecodeString("043587CF")
+	TestPrv, _ = hex.DecodeString("04358394")
 )
 
 // ExtKey type houses params for extended private key
 type ExtKey struct {
-	key []byte // 33 bytes
-	pubkey []byte
-	chainCode []byte // 32 bytes
-	version []byte // 4 byte
-	depth uint8 // 1 byte
+	key               []byte // 33 bytes
+	pubkey            []byte
+	chainCode         []byte // 32 bytes
+	version           []byte // 4 byte
+	depth             uint8  // 1 byte
 	parentFingerPrint []byte
-	childNum uint32 // 4bytes
-	isPrivate bool // true => privkey, false => pubkey
+	childNum          uint32 // 4bytes
+	isPrivate         bool   // true => privkey, false => pubkey
 }
 
 // NewExtKey returns a new instnace of ExtKey
 func NewExtKey(key []byte, chainCode []byte, version []byte, depth uint8,
-		parentFingerPrint []byte, childNum uint32, isPrivate bool) *ExtKey {
-	return &ExtKey {
-		key: key,
-		chainCode: chainCode,
-		version: version,
-		depth: depth,
+	parentFingerPrint []byte, childNum uint32, isPrivate bool) *ExtKey {
+	return &ExtKey{
+		key:               key,
+		chainCode:         chainCode,
+		version:           version,
+		depth:             depth,
 		parentFingerPrint: parentFingerPrint,
-		childNum: childNum,
-		isPrivate: isPrivate,
+		childNum:          childNum,
+		isPrivate:         isPrivate,
 	}
 }
 
 // MasterGen returns master key derived from seed.
 //
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Master_key_generation
-// func (k *ExtKey)MasterGen(seed []byte) (*ExtKey, error) {
-// 	if len(seed) < MinSeedBytes || len(seed) > MaxSeedBytes {
-// 		return nil, ErrInvalidSeedLength
-// 	}
+func MasterGen(seed []byte) (*ExtKey, error) {
+	// I = HMAC-SHA512(Key = "Bitcoin seed", Data = S)
+	mac := hmac.New(sha512.New, []byte("Bitcoin seed"))
+	mac.Write(seed)
+	iAll := mac.Sum(nil)
 
-// 	return NewExtKey(key, 0, true)
-// }
+	iR := iAll[32:] // chainCode
+	iL := iAll[:32] // privkey
+	privkey := new(big.Int).SetBytes(iL)
+	n := big.NewInt(2).Exp(big.NewInt(2), big.NewInt(256), nil)
+	if privkey.Sign() == 0 || privkey.Cmp(n) == 1 {
+		return nil, ErrInvalidSeedValue
+	}
+	return NewExtKey(
+		iL, // key
+		iR, // chainCode
+		// TODO: Be able to make choice main/testnet
+		MainPrv,
+		0,               // depth
+		make([]byte, 4), // parentFP is 0x00000000 if masterkey
+		0,               //childNum
+		true,
+	), nil
+}
+
+// this function serialize ExtKey.
+//
+// Serialization Format:
+// version || depth || parentFP || childNum || chainCode || 0x00 || key || checksum
+func (k *ExtKey) Serialize() (string, error) {
+	ret := make([]byte, 0)
+	ret = append(ret, k.version...)
+	ret = append(ret, k.depth)
+	ret = append(ret, k.parentFingerPrint...)
+	childNum := make([]byte, 4)
+	binary.BigEndian.PutUint32(childNum, k.childNum)
+	ret = append(ret, childNum...)
+	ret = append(ret, k.chainCode...)
+	if k.isPrivate {
+		ret = append(ret, 0x00)
+		ret = append(ret, k.key...)
+	} else {
+		// unimplemented
+	}
+	// checksum = sha256(sha256(ret))
+	hash := sha256.Sum256(ret)
+	doublehash := sha256.Sum256(hash[:])
+	checksum := doublehash[:][:4]
+
+	ret = append(ret, checksum...)
+
+	return base58.Encode(ret), nil
+}
 
 // SeedGen returns seed.
 //
