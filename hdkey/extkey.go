@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math/big"
 
+	// TODO: Impl it myself in the future
 	"github.com/btcsuite/btcutil/base58"
 )
 
@@ -69,18 +70,18 @@ func MasterGen(seed []byte) (*ExtKey, error) {
 	// I = HMAC-SHA512(Key = "Bitcoin seed", Data = S)
 	mac := hmac.New(sha512.New, []byte("Bitcoin seed"))
 	mac.Write(seed)
-	I := mac.Sum(nil)
+	iAll := mac.Sum(nil)
 
-	Ir := I[32:] // chainCode
-	Il := I[:32] // privkey
-	privkey := new(big.Int).SetBytes(Il)
+	iR := iAll[32:] // chainCode
+	iL := iAll[:32] // privkey
+	privkey := new(big.Int).SetBytes(iL)
 	n := big.NewInt(2).Exp(big.NewInt(2), big.NewInt(256), nil)
 	if privkey.Sign() == 0 || privkey.Cmp(n) == 1 {
 		return nil, ErrInvalidSeedValue
 	}
 	return NewExtKey(
-		Il, // key
-		Ir, // chainCode
+		iL, // key
+		iR, // chainCode
 		// TODO: Be able to make choice main/testnet
 		MainPrv,
 		0,               // depth
@@ -103,7 +104,7 @@ func (k *ExtKey) Serialize() (string, error) {
 	binary.BigEndian.PutUint32(childNum, k.childNum)
 	ret = append(ret, childNum...)
 	ret = append(ret, k.chainCode...)
-	if k.isPrivate == true {
+	if k.isPrivate {
 		ret = append(ret, 0x00)
 		ret = append(ret, k.key...)
 	} else {
