@@ -3,6 +3,7 @@ package hdkey
 // This is  an implementation of https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 
 import (
+	"encoding/hex"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -11,6 +12,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"reflect"
 
 	// TODO: Impl it myself in the future
 	"github.com/btcsuite/btcutil/base58"
@@ -40,6 +42,12 @@ var (
 	// ErrDeriveHardenedFromPub describes an error which is throwed when
 	// you try to derive hardened child key from extended parent public key
 	ErrDeriveHardenedFromPub = fmt.Errorf("Cannot derive hardened child key from extended public key.")
+
+	// version bytes
+	MainPubVer, _ = hex.DecodeString("0488B21E")
+	MainPrvVer, _ = hex.DecodeString("0488ADE4")
+	TestPubVer, _ = hex.DecodeString("043587CF")
+	TestPrvVer, _ = hex.DecodeString("04358394")
 )
 
 // ExtKey type houses params for extended private key
@@ -215,3 +223,33 @@ func (k *ExtKey) DeriveChildKey(i uint32) (*ExtKey, error) {
 // func (k *ExtKey) DerivePubkey(privkey []byte) []byte {
 // 	return
 // }
+
+// Neuter returns extended public key corresponding to given
+// extended private key
+func (k *ExtKey) Neuter() *ExtKey {
+	if !k.isPrivate {
+		return k
+	}
+
+	// version: from priv to pub
+	// k.key: from priv to pub
+	// k.pubkey: from pub to nil
+
+	var version []byte
+	if reflect.DeepEqual(k.version, MainPrvVer) {
+		version = MainPubVer
+	} else if reflect.DeepEqual(k.version, TestPrvVer) {
+		version = TestPubVer
+	}
+	
+
+	return NewExtKey(
+		k.getPubkeyBytes(),
+		k.chainCode,
+		version,
+		k.depth,
+		k.parentFingerPrint,
+		k.childNum,
+		false,
+	)
+}
