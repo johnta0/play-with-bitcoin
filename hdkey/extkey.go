@@ -3,11 +3,16 @@ package hdkey
 // This is  an implementation of https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
 
 import (
-	"fmt"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha512"
+	"encoding/binary"
+	"fmt"
+
+	"github.com/btcsuite/btcd/btcec"
 )
 
-const(
+const (
 	// MinSeedBytes defines min value of seed length in bytes
 	MinSeedBytes = 16 // 128 bits
 	// MaxSeedBytes defines max value of seed length in bytes
@@ -16,35 +21,39 @@ const(
 	RecommendedBytes = 32 // 256 bits
 )
 
-var(
+var (
 	// ErrInvalidSeedLength describes an error in which provided seed length
 	// is not in the specified range
 	ErrInvalidSeedLength = fmt.Errorf("Seed length must be between %d and %d bits", MinSeedBytes*8, MaxSeedBytes*8)
+
+	// ErrDeriveHardenedFromPub describes an error which is throwed when
+	// you try to derive hardened child key from extended parent public key
+	ErrDeriveHardenedFromPub = fmt.Errorf("Cannot derive hardened child key from extended public key.")
 )
 
 // ExtKey type houses params for extended private key
 type ExtKey struct {
-	key []byte // 33 bytes
-	pubkey []byte
-	chainCode []byte // 32 bytes
-	version []byte // 4 byte
-	depth uint8 // 1 byte
+	key               []byte // 33 bytes
+	pubkey            []byte
+	chainCode         []byte // 32 bytes
+	version           []byte // 4 byte
+	depth             uint8  // 1 byte
 	parentFingerPrint []byte
-	childNum uint32 // 4bytes
-	isPrivate bool // true => privkey, false => pubkey
+	childNum          uint32 // 4bytes
+	isPrivate         bool   // true => privkey, false => pubkey
 }
 
 // NewExtKey returns a new instnace of ExtKey
 func NewExtKey(key []byte, chainCode []byte, version []byte, depth uint8,
-		parentFingerPrint []byte, childNum uint32, isPrivate bool) *ExtKey {
-	return &ExtKey {
-		key: key,
-		chainCode: chainCode,
-		version: version,
-		depth: depth,
+	parentFingerPrint []byte, childNum uint32, isPrivate bool) *ExtKey {
+	return &ExtKey{
+		key:               key,
+		chainCode:         chainCode,
+		version:           version,
+		depth:             depth,
 		parentFingerPrint: parentFingerPrint,
-		childNum: childNum,
-		isPrivate: isPrivate,
+		childNum:          childNum,
+		isPrivate:         isPrivate,
 	}
 }
 
@@ -77,10 +86,73 @@ func SeedGen(length uint8) ([]byte, error) {
 	return seed, nil
 }
 
-// DeriveChildKey returns derived childed key by index
-// func (k *ExtKey) DeriveChildKey(index uint) (*ExtKey) {
-// 	return NewExtKey()
-// }
+// DerivePubkey returns pubkey bytes derived from private key,
+// if ExtKey instnace isPrivate
+func (k *ExtKey) DerivePubkey() []byte {
+	if !k.isPrivate {
+		return k.key
+	}
+
+	if k.pubkey == nil {
+		x, y := btcec.S256().ScalarBaseMult(k.key)
+		pk := btcec.PublicKey{btcec.S256(), x, y}
+		k.pubkey = pk.SerializeCompressed()
+	}
+	return k.pubkey
+}
+
+func (k *ExtKey) getPubkeyBytes() []byte {
+	if !k.isPrivate {
+		return k.pubkey
+	}
+
+	if k.pubkey == nil {
+		_, pub := btcec.PrivKeyFromBytes(btcec.S256(), k.key)
+		k.pubkey = pub.SerializeCompressed()
+	}
+	return k.pubkey
+}
+
+// DeriveChildKey returns derived childed extended key
+func (k *ExtKey) DeriveChildKey(i uint32) (*ExtKey, error) {
+
+	// There are four cases:
+	// 	1. Private extkey => Private child hardend key
+	//	2. Private extkey => Private child normal key
+	//	3. Public extkey => Public child hardened key (return invalid)
+	//	4. Public extkey => Public child normal key
+
+	// the child extkey is hardened or not
+	toBeHardened := i >= 0x80000000 // 2^31 = 8 * 16^7
+
+	// Case 3 is invalid. Return error early
+	if !k.isPrivate && toBeHardened {
+		return nil, ErrDeriveHardenedFromPub
+	}
+
+	// When hardened: Data = 0x00 || ser256(kpar) || ser32(i)
+	// When not:	  Data = serP(point(kpar))
+	data := make([]byte, 37)
+	binary.BigEndian.PutUint32(data[33:], i)
+	if toBeHardened {
+		// case 1
+		copy(data[1:], k.key)
+	} else {
+		// case 2, 4
+		// I = HMAC-SHA512(Key = cpar, Data = serP(point(kpar) or K_par) || ser32(i)).
+		copy(data, k.getPubkeyBytes())
+	}
+
+	mac512 := hmac.New(sha512.New, k.chainCode) // use chain code as the key
+	mac512.Write(data)
+	// I = HMAC-SHA512(c_par, data), I_L => be used to derive child, I_R => chain code
+	iAll := mac512.Sum(nil)
+
+	iL := iAll[:len(iAll)/2]
+	childChainCode := iAll[len(iAll)/2:]
+
+	return nil, NewExtKey()
+}
 
 // DerivePubkey returns public key derived from given private key
 // func (k *ExtKey) DerivePubkey(privkey []byte) []byte {
