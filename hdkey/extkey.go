@@ -14,6 +14,7 @@ import (
 
 	// TODO: Impl it myself in the future
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcec"
 )
 
 const (
@@ -75,7 +76,7 @@ func MasterGen(seed []byte) (*ExtKey, error) {
 	iR := iAll[32:] // chainCode
 	iL := iAll[:32] // privkey
 	privkey := new(big.Int).SetBytes(iL)
-	n := big.NewInt(2).Exp(big.NewInt(2), big.NewInt(256), nil)
+	n := btcec.S256().N
 	if privkey.Sign() == 0 || privkey.Cmp(n) == 1 {
 		return nil, ErrInvalidSeedValue
 	}
