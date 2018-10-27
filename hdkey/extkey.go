@@ -83,7 +83,7 @@ func MasterGen(seed []byte) (*ExtKey, error) {
 	return NewExtKey(
 		iL, // key
 		iR, // chainCode
-		// TODO: Be able to make choice main/testnet
+		// TODO: Be able to make a choice main/testnet
 		MainPrv,
 		0,               // depth
 		make([]byte, 4), // parentFP is 0x00000000 if masterkey
