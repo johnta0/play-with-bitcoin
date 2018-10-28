@@ -108,7 +108,7 @@ func (k *ExtKey) Serialize() (string, error) {
 		ret = append(ret, 0x00)
 		ret = append(ret, k.key...)
 	} else {
-		// unimplemented
+		ret = append(ret, k.key...)
 	}
 	// checksum = sha256(sha256(ret))
 	hash := sha256.Sum256(ret)

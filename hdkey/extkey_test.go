@@ -43,6 +43,7 @@ func TestSeedGen(t *testing.T) {
 func TestMasterGen(t *testing.T) {
 	seed1, _ := hex.DecodeString("000102030405060708090a0b0c0d0e0f")
 	seed2, _ := hex.DecodeString("fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542")
+	seed3, _ := hex.DecodeString("4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be")
 
 	tests := []struct {
 		name   string
@@ -53,6 +54,7 @@ func TestMasterGen(t *testing.T) {
 	}{
 		{name: "Test Vector1", seed: seed1, extprv: "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"},
 		{name: "Test Vector2", seed: seed2, extprv: "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U"},
+		{name: "Test Vector3", seed: seed3, extprv: "xprv9s21ZrQH143K25QhxbucbDDuQ4naNntJRi4KUfWT7xo4EKsHt2QJDu7KXp1A3u7Bi1j8ph3EGsZ9Xvz9dGuVrtHHs7pXeTzjuxBrCmmhgC6"},
 	}
 	for _, test := range tests {
 		fmt.Printf("TEST: %s, seed: %x\n", test.name, test.seed)
@@ -69,3 +71,4 @@ func TestMasterGen(t *testing.T) {
 		}
 	}
 }
+
