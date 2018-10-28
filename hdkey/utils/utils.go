@@ -8,8 +8,8 @@ const (
 	BitcoinBase58Strings = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 )
 
-// reverse the order
-func reverse(b []byte) []byte {
+// Reverse returns byte array in the reverse order
+func Reverse(b []byte) []byte {
 	for i, j := 0, len(b)-1; i < j; i, j = i+1, j-1 {
 		b[i], b[j] = b[j], b[i]
 	}
@@ -29,14 +29,14 @@ func Encode(b []byte) string {
 		num.DivMod(num, radix, mod)
 		ret = append(ret, BitcoinBase58Strings[mod.Int64()])
 	}
-	ret = reverse(ret)
+	ret = Reverse(ret)
 	return string(ret)
 }
 
 // Decode returns byte array decoded by base58
 // arg: string
 func Decode(s string) []byte {
-	revstr := string(reverse([]byte(s)))
+	revstr := string(Reverse([]byte(s)))
 	ret := big.NewInt(0)
 	radix := big.NewInt(1)
 	fiftyEight := big.NewInt(58)
