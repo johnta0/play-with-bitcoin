@@ -12,9 +12,8 @@ import (
 	"fmt"
 	"math/big"
 
-	// TODO: Impl it myself in the future
-	"github.com/btcsuite/btcutil/base58"
 	"github.com/btcsuite/btcd/btcec"
+	"./utils"
 )
 
 const (
@@ -118,7 +117,7 @@ func (k *ExtKey) Serialize() (string, error) {
 
 	ret = append(ret, checksum...)
 
-	return base58.Encode(ret), nil
+	return utils.Encode(ret), nil
 }
 
 // SeedGen returns seed.
