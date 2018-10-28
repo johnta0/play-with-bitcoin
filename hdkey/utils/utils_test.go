@@ -33,7 +33,7 @@ func TestDecode(t *testing.T) {
 	}{
 		// valid ones
 		{name: "case1: 123456789", input: "dKYWwnRHc7Ck", value: []byte("123456789")},
-		{name: "case2: bitcoin", input: "dKYWwnRHc7Ck", value: []byte("123456789")},
+		{name: "case2: bitcoin", input: "4jJc4sAwPs", value: []byte("bitcoin")},
 	}
 	for _, test := range tests {
 		decoded := Decode(test.input)
