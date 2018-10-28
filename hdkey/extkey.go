@@ -12,9 +12,8 @@ import (
 	"fmt"
 	"math/big"
 
-	// TODO: Impl it myself in the future
-	"github.com/btcsuite/btcutil/base58"
 	"github.com/btcsuite/btcd/btcec"
+	"./utils"
 )
 
 const (
@@ -83,7 +82,7 @@ func MasterGen(seed []byte) (*ExtKey, error) {
 	return NewExtKey(
 		iL, // key
 		iR, // chainCode
-		// TODO: Be able to make choice main/testnet
+		// TODO: Be able to make a choice main/testnet
 		MainPrv,
 		0,               // depth
 		make([]byte, 4), // parentFP is 0x00000000 if masterkey
@@ -118,7 +117,7 @@ func (k *ExtKey) Serialize() (string, error) {
 
 	ret = append(ret, checksum...)
 
-	return base58.Encode(ret), nil
+	return utils.Encode(ret), nil
 }
 
 // SeedGen returns seed.
