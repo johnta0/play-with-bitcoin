@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	bitcoinBase58Strings = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	BitcoinBase58Strings = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 )
 
 // reverse the order
@@ -27,7 +27,7 @@ func Encode(b []byte) string {
 	for num.Sign() == 1 {
 		mod := new(big.Int)
 		num.DivMod(num, radix, mod)
-		ret = append(ret, bitcoinBase58Strings[mod.Int64()])
+		ret = append(ret, BitcoinBase58Strings[mod.Int64()])
 	}
 	ret = reverse(ret)
 	return string(ret)
@@ -43,7 +43,7 @@ func Decode(s string) []byte {
 	// Convert base58string to bigint
 	for _, b := range revstr {
 		radix2 := new(big.Int).Set(radix)
-		for j, c := range bitcoinBase58Strings {
+		for j, c := range BitcoinBase58Strings {
 			if b == c {
 				ret.Add(ret, radix2.Mul(radix2, big.NewInt(int64(j))))
 			}
