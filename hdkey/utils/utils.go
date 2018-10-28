@@ -4,7 +4,7 @@ import (
 	"math/big"
 )
 
-var (
+const (
 	BitcoinBase58Strings = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 )
 

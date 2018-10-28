@@ -18,7 +18,7 @@ func TestEncode(t *testing.T) {
 	}
 	for _, test := range tests {
 		encoded := Encode(test.input)
-		if encoded == test.value {
+		if encoded != test.value {
 			t.Errorf("value mismatch. output: %v, correct result: %v", encoded, test.value)
 		}
 	}
